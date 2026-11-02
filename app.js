@@ -369,11 +369,12 @@
     if (!S.loaded) return;
     const prof = currentProfile();
     let body;
+    // The leaderboard and rules are open to anyone; picking needs a name.
     if (S.error) body = viewError();
-    else if (!prof || S.joining) body = viewWelcome();
-    else if (S.view === 'second') body = viewSecond();
     else if (S.view === 'board') body = viewBoard();
     else if (S.view === 'rules') body = viewRules();
+    else if (!prof || S.joining) body = viewWelcome();
+    else if (S.view === 'second') body = viewSecond();
     else body = viewMine();
 
     root.innerHTML = `
@@ -390,9 +391,10 @@
             <span class="who-avatar">${esc(prof.avatar)}</span>
             <span class="who-name">${esc(prof.name)}</span>
             <span class="who-switch">switch</span>
-          </button>` : ''}
+          </button>` : (S.view === 'board' || S.view === 'rules') ? `
+          <button class="btn primary small" data-action="nav" data-view="mine">Play ⚽</button>` : ''}
       </header>
-      ${prof && !S.joining && !S.error ? nav() : ''}
+      ${S.error ? '' : nav()}
       <main class="main">${body}</main>
       ${S.modal ? viewModal() : ''}
     `;
@@ -428,6 +430,7 @@
         <div class="huge" aria-hidden="true">⚽🏆⚽</div>
         <h2>Who will win the 2026 NWSL Championship?</h2>
         <p>Pick the winner of every playoff game and see who gets the most points!</p>
+        <button class="btn secondary" data-action="nav" data-view="board">🏅 Just looking? See the leaderboard</button>
       </section>
       ${list.length ? `
         <section class="card">
@@ -772,9 +775,21 @@
     S.secondDirty = true;
   }
 
+  // Each tab has its own address (e.g. .../#leaderboard), so refreshing stays put.
+  const HASHES = { mine: '', second: '#second-chance', board: '#leaderboard', rules: '#how-to-play' };
+  const viewFromHash = () => Object.keys(HASHES).find(v => HASHES[v] && HASHES[v] === location.hash) || 'mine';
+  function setHash() {
+    try { history.replaceState(null, '', location.pathname + location.search + HASHES[S.view]); } catch (e) { /* ignore */ }
+  }
+
   const actions = {
     retry() { S.error = ''; S.loaded = false; render(); load(); },
-    nav(el) { S.view = el.dataset.view; S.draft = S.view === 'mine' ? S.draft : null; render(); window.scrollTo(0, 0); if (S.view === 'board') load(); },
+    nav(el) {
+      S.view = el.dataset.view;
+      S.draft = S.view === 'mine' ? S.draft : null;
+      setHash(); render(); window.scrollTo(0, 0);
+      if (S.view === 'board') load();
+    },
     'switch-player'() {
       if (S.secondDirty && !confirm('You have unsaved Second Chance changes. Switch anyway?')) return;
       S.joining = false; S.joinError = ''; S.draft = null; S.second = null; S.secondDirty = false;
@@ -835,7 +850,7 @@
     if (local) {
       profiles.current = local.name;
     } else if (S.players.some(p => sameName(p.name, name))) {
-      S.joinError = `Someone is already playing as “${name}”. Try adding your last initial, like “${name} B.”`;
+      S.joinError = `Someone is already playing as “${name}”. Try adding your last initial, like “${name} B.” If that’s really you on a new phone or computer, ask the organizer to reset your name.`;
       return render();
     } else {
       profiles.list.push({ name, key: newKey(), avatar: S.joinAvatar });
@@ -965,6 +980,8 @@
     });
   }
 
+  S.view = viewFromHash();
+  window.addEventListener('hashchange', () => { S.view = viewFromHash(); S.draft = null; render(); });
   renderDemo();
   load();
 })();
