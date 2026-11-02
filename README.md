@@ -48,7 +48,7 @@ Then open http://localhost:8642.
 - **Semifinal and final times:** the Games tab starts with placeholder times. Update the **Kickoff** cells once the league announces them, because Second Chance picks lock at kickoff.
 - **Fix a typo in a name:** edit the **Name** cell in the Players tab.
 - **Remove a test player:** delete their row in the Players tab.
-- **Someone switched devices and can't get back in:** clear their **Device key** cell. The next device that plays as that name takes it over.
+- **Someone switched devices and can't get back in:** clear their **Device key** cell. Then they open the site on the new device and type the same name. Their picks come right back, and the name locks to that device again.
 
 ## Step 3: Publish with GitHub Pages
 

@@ -78,6 +78,7 @@
           name: q.name,
           avatar: q.avatar,
           hasOriginal: Object.keys(q.original).length > 0,
+          open: !q.key,
           original: now >= firstKick ? q.original : {},
           second: lockedOnly(second(q)),
         })),
@@ -85,7 +86,16 @@
       };
     };
 
-    if (body.action === 'state') return { result: state(body.name, body.key), player: null };
+    if (body.action === 'state') {
+      // A name the organizer reset (blank device key) goes to the next device that asks for it.
+      const p = body.name ? find(body.name) : null;
+      if (p && !p.key && String(body.key || '').length >= 8) {
+        p.key = String(body.key);
+        p.updated = now;
+        return { result: state(p.name, p.key), player: p };
+      }
+      return { result: state(body.name, body.key), player: null };
+    }
     if (body.action !== 'save') return err('BAD_REQUEST', 'Unknown request.');
 
     const name = norm(body.name);
@@ -847,22 +857,26 @@
     const name = S.joinName.trim().replace(/\s+/g, ' ');
     if (!name) { S.joinError = 'Type your name first!'; return render(); }
     const local = profiles.list.find(p => sameName(p.name, name));
+    const taken = S.players.find(p => sameName(p.name, name));
     if (local) {
       profiles.current = local.name;
-    } else if (S.players.some(p => sameName(p.name, name))) {
+    } else if (taken && !taken.open) {
       S.joinError = `Someone is already playing as “${name}”. Try adding your last initial, like “${name} B.” If that’s really you on a new phone or computer, ask the organizer to reset your name.`;
       return render();
     } else {
-      profiles.list.push({ name, key: newKey(), avatar: S.joinAvatar });
-      profiles.current = name;
+      // A reset name keeps its spelling and picks; loading below claims it for this device.
+      profiles.list.push({ name: taken ? taken.name : name, key: newKey(), avatar: taken ? taken.avatar : S.joinAvatar });
+      profiles.current = taken ? taken.name : name;
     }
     saveProfiles();
     const p = currentProfile();
+    const fresh = !local && !taken;
     S.joining = false; S.joinError = ''; S.joinName = ''; S.view = 'mine';
     S.me = { name: p.name, avatar: p.avatar, original: {}, second: {}, isNew: true };
-    if (!local && !originalLocked()) S.draft = { picks: {}, step: 0 };
+    if (fresh && !originalLocked()) S.draft = { picks: {}, step: 0 };
+    setHash();
     render();
-    if (local) { S.loaded = false; load(); }
+    if (!fresh) { S.loaded = false; load(); }
   }
 
   function focusName() {

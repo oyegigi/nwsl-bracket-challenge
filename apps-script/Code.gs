@@ -187,6 +187,7 @@ function handleRequest(db, now, body) {
         name: q.name,
         avatar: q.avatar,
         hasOriginal: Object.keys(q.original).length > 0,
+        open: !q.key,
         original: now >= firstKick ? q.original : {},
         second: lockedOnly(second(q)),
       })),
@@ -194,7 +195,16 @@ function handleRequest(db, now, body) {
     };
   };
 
-  if (body.action === 'state') return { result: state(body.name, body.key), player: null };
+  if (body.action === 'state') {
+    // A name the organizer reset (blank device key) goes to the next device that asks for it.
+    const p = body.name ? find(body.name) : null;
+    if (p && !p.key && String(body.key || '').length >= 8) {
+      p.key = String(body.key);
+      p.updated = now;
+      return { result: state(p.name, p.key), player: p };
+    }
+    return { result: state(body.name, body.key), player: null };
+  }
   if (body.action !== 'save') return err('BAD_REQUEST', 'Unknown request.');
 
   const name = norm(body.name);
