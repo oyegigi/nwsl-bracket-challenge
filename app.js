@@ -446,8 +446,9 @@
           <label class="field-label" for="join-name">What’s your name?</label>
           <input id="join-name" class="input" name="name" maxlength="20" value="${esc(S.joinName)}" placeholder="Type your name" enterkeyhint="done">
           <p class="hint">Your first name is great. Add a last initial if someone has the same name.</p>
-          <p class="field-label">Pick your buddy:</p>
-          <div class="avatar-grid" role="radiogroup" aria-label="Pick an avatar">
+          <p class="field-label">Pick your emoji:</p>
+          <p class="hint">It shows up next to your name on the leaderboard.</p>
+          <div class="avatar-grid" role="radiogroup" aria-label="Pick your emoji">
             ${AVATARS.map(a => `
               <button type="button" class="avatar ${a === S.joinAvatar ? 'on' : ''}" role="radio" aria-checked="${a === S.joinAvatar}" data-action="avatar" data-emoji="${a}">${a}</button>`).join('')}
           </div>
