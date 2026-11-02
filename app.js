@@ -227,6 +227,7 @@
     joinError: '',
     modal: null,        // player name whose bracket is open
     saving: false,
+    busy: false,        // fetching the latest scoreboard
   };
 
   const now = () => Date.now() + S.offset;
@@ -340,12 +341,16 @@
 
   async function load() {
     const prof = currentProfile();
+    S.busy = true;
+    // Background refreshes only re-render the leaderboard, so typing elsewhere isn't interrupted.
+    if (S.loaded && S.view === 'board') render();
     try {
       applyState(await call({ action: 'state', name: prof && prof.name, key: prof && prof.key }));
       S.error = '';
     } catch (e) {
       S.error = 'We couldn’t reach the scoreboard. Check your internet and try again.';
     }
+    S.busy = false;
     S.loaded = true;
     render();
   }
@@ -376,7 +381,14 @@
   // ---------- Views ----------
   function render() {
     const root = document.getElementById('app');
-    if (!S.loaded) return;
+    if (!S.loaded) {
+      const prof = currentProfile();
+      root.innerHTML = `<div class="loading" role="status">
+        <span class="spin" aria-hidden="true">⚽</span>
+        <p>${prof ? `Getting ${esc(prof.name)}’s picks…` : 'Loading…'}</p>
+      </div>`;
+      return;
+    }
     const prof = currentProfile();
     let body;
     // The leaderboard and rules are open to anyone; picking needs a name.
@@ -709,7 +721,9 @@
       <section class="card board">
         <div class="row spread">
           <h2>${kind === 'original' ? 'First Bracket' : 'Second Chance'} standings</h2>
-          <button class="btn ghost small" data-action="refresh" aria-label="Refresh">↻ Refresh</button>
+          <button class="btn ghost small" data-action="refresh" ${S.busy ? 'disabled aria-busy="true"' : ''}>
+            ${S.busy ? '<span class="spin" aria-hidden="true">⚽</span> Updating…' : '↻ Refresh'}
+          </button>
         </div>
         <p class="hint">${done} of ${GAMES.length} games played · ${MAX_POINTS} points max</p>
         ${!rows.length ? `<p class="empty-note">${kind === 'second' && !locked ? 'Second Chance starts when the first game kicks off.' : 'Nobody has made picks yet. Be the first!'}</p>` : `

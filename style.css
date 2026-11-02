@@ -43,6 +43,8 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 
 .app { max-width: 760px; margin: 0 auto; padding: 0 16px 120px; }
 .loading { text-align: center; padding: 30vh 0; font-size: 1.4rem; color: var(--muted); }
+.loading .spin { font-size: 3rem; }
+.loading p { margin-top: 12px; }
 .spin { display: inline-block; animation: spin 1.2s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
