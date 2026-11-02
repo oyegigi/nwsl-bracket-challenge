@@ -38,11 +38,11 @@ const MATCHUPS = {
   qf2: 'KC Current (KC) vs Angel City (LA)',
   qf3: 'San Diego Wave (SD) vs Utah Royals (UTA)',
   qf4: 'Washington Spirit (WAS) vs Portland Thorns (POR)',
-  sf1: 'Winner of QF1 vs winner of QF2',
-  sf2: 'Winner of QF3 vs winner of QF4',
+  sf1: 'Winner of GFC/SEA vs winner of KC/LA',
+  sf2: 'Winner of SD/UTA vs winner of WAS/POR',
   final: 'Winner of SF1 vs winner of SF2',
 };
-const PLAYER_HEADERS = ['Name', 'Avatar', 'Champion pick', 'First bracket', 'Second Chance', 'Last saved', 'Device key (clear to let them use a new device)'];
+const PLAYER_HEADERS = ['Name', 'Avatar', 'Champion pick', 'First bracket', 'Second Chance', 'Last saved', 'Device key (from before secret emojis)', 'Secret emoji'];
 
 // ---------- One-time setup ----------
 function setup() {
@@ -122,6 +122,10 @@ function readDb() {
   });
 
   const sheet = ss.getSheetByName('Players');
+  // Sheets made before secret emojis existed get the new column header.
+  if (sheet.getLastColumn() < PLAYER_HEADERS.length) {
+    sheet.getRange(1, 1, 1, PLAYER_HEADERS.length).setValues([PLAYER_HEADERS]).setFontWeight('bold').setBackground('#ECE7FF');
+  }
   const last = sheet.getLastRow();
   const rows = last > 1 ? sheet.getRange(2, 1, last - 1, PLAYER_HEADERS.length).getValues() : [];
   const players = [];
@@ -134,6 +138,7 @@ function readDb() {
       original: parsePicks(r[3]),
       second: parsePicks(r[4]),
       key: String(r[6] || ''),
+      secret: String(r[7] || '').trim(),
     });
   });
   return { games: games, players: players };
@@ -151,7 +156,7 @@ function parsePicks(v) {
 function writePlayer(p) {
   const sheet = SpreadsheetApp.getActive().getSheetByName('Players');
   const champ = p.original && p.original.final ? TEAM_NAMES[p.original.final] : '';
-  const values = [[p.name, p.avatar, champ, JSON.stringify(p.original || {}), JSON.stringify(p.second || {}), new Date(p.updated), p.key]];
+  const values = [[p.name, p.avatar, champ, JSON.stringify(p.original || {}), JSON.stringify(p.second || {}), new Date(p.updated), p.key || '', p.secret || '']];
   if (p.row) {
     sheet.getRange(p.row, 1, 1, values[0].length).setValues(values);
   } else {
@@ -176,9 +181,12 @@ function handleRequest(db, now, body) {
     return out;
   };
   const err = (code, message) => ({ result: { ok: false, error: code, message: message }, player: null });
-  const state = (name, key) => {
+  const secretOf = b => String(b.secret || '').trim().slice(0, 8);
+  // Your secret emoji gets you in on any device. Older players without one use the key saved on their first device.
+  const canUse = (p, b) => p.secret ? secretOf(b) === p.secret : !!p.key && String(b.key || '') === p.key;
+  const state = (name, b) => {
     const p = name ? find(name) : null;
-    const mine = p && p.key && p.key === key ? p : null;
+    const mine = p && canUse(p, b) ? p : null;
     return {
       ok: true,
       now: now,
@@ -187,34 +195,34 @@ function handleRequest(db, now, body) {
         name: q.name,
         avatar: q.avatar,
         hasOriginal: Object.keys(q.original).length > 0,
-        open: !q.key,
+        hasSecret: !!q.secret,
+        open: !q.key && !q.secret,
         original: now >= firstKick ? q.original : {},
         second: lockedOnly(second(q)),
       })),
-      me: mine ? { name: mine.name, avatar: mine.avatar, original: mine.original, second: second(mine) } : null,
+      me: mine ? { name: mine.name, avatar: mine.avatar, hasSecret: !!mine.secret, original: mine.original, second: second(mine) } : null,
     };
   };
 
   if (body.action === 'state') {
-    // A name the organizer reset (blank device key) goes to the next device that asks for it.
+    // Players without a secret emoji yet (or ones the organizer reset) pick one here.
     const p = body.name ? find(body.name) : null;
-    if (p && !p.key && String(body.key || '').length >= 8) {
-      p.key = String(body.key);
+    if (p && !p.secret && secretOf(body) && (!p.key || String(body.key || '') === p.key)) {
+      p.secret = secretOf(body);
       p.updated = now;
-      return { result: state(p.name, p.key), player: p };
+      return { result: state(p.name, body), player: p };
     }
-    return { result: state(body.name, body.key), player: null };
+    return { result: state(body.name, body), player: null };
   }
   if (body.action !== 'save') return err('BAD_REQUEST', 'Unknown request.');
 
   const name = norm(body.name);
-  const key = String(body.key || '');
   if (!name || name.length > 20) return err('BAD_NAME', 'Names need between 1 and 20 letters.');
-  if (key.length < 8) return err('BAD_REQUEST', 'Missing device key.');
   let p = find(name);
-  if (p && p.key && p.key !== key) {
-    return err('NAME_TAKEN', 'Someone is already playing as "' + p.name + '". Try adding your last initial!');
+  if (p && (p.secret || p.key) && !canUse(p, body)) {
+    return err('WRONG_SECRET', 'That’s not the secret emoji for "' + p.name + '". If you’re someone else, try adding your last initial!');
   }
+  if (!(p && p.secret) && !secretOf(body) && !(p && p.key)) return err('NO_SECRET', 'Pick a secret emoji first.');
   const picksIn = body.picks || {};
   let original = p ? p.original : {};
   let secondPicks = p ? p.second : {};
@@ -245,13 +253,13 @@ function handleRequest(db, now, body) {
 
   const avatar = String(body.avatar || '').slice(0, 8) || (p && p.avatar) || '⚽';
   if (!p) {
-    p = { name: name, key: key };
+    p = { name: name, key: '' };
     db.players.push(p);
   }
-  p.key = key;
+  p.secret = p.secret || secretOf(body);
   p.avatar = avatar;
   p.original = original;
   p.second = secondPicks;
   p.updated = now;
-  return { result: state(p.name, key), player: p };
+  return { result: state(p.name, body), player: p };
 }

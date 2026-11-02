@@ -315,3 +315,8 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Secret emoji reminder on My Bracket */
+.secret-note summary { font-weight: 600; cursor: pointer; color: var(--primary); }
+.secret-note p { margin-top: 10px; }
+.secret-emoji { font-size: 1.6rem; vertical-align: middle; }

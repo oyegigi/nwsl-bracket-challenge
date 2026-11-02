@@ -5,7 +5,7 @@ A simple, kid-friendly bracket game for the 2026 NWSL Playoffs, for family and f
 - **First Bracket:** pick all 7 games before the first kickoff (Fri Nov 6, 10 PM ET).
 - **Second Chance:** after games start, re-pick any game that hasn't kicked off yet. It has its own score and leaderboard.
 - **Scoring:** Quarterfinal = 1 pt, Semifinal = 2 pts, Champion = 4 pts (12 max).
-- No passwords. Players type a name and the site remembers them on that device. Several kids can share one iPad by using "switch".
+- No passwords. Players pick a name and a **secret emoji**. To play on another phone or computer, they type the same name and tap the same emoji. The site remembers them after that, and several kids can share one iPad by using "switch".
 
 The site is plain HTML/CSS/JS (no build step). Picks are stored in a Google Sheet that you own.
 
@@ -48,7 +48,10 @@ Then open http://localhost:8642.
 - **Semifinal and final times:** the Games tab starts with placeholder times. Update the **Kickoff** cells once the league announces them, because Second Chance picks lock at kickoff.
 - **Fix a typo in a name:** edit the **Name** cell in the Players tab.
 - **Remove a test player:** delete their row in the Players tab.
-- **Someone switched devices and can't get back in:** clear their **Device key** cell. Then they open the site on the new device and type the same name. Their picks come right back, and the name locks to that device again.
+- **Someone forgot their secret emoji:** look in the **Secret emoji** column of the Players tab and tell them.
+- **Reset someone's name:** clear both their **Secret emoji** and **Device key** cells. The next person who types that name picks a new secret emoji and gets the existing picks.
+- **Players who joined before secret emojis existed** are asked to pick one the next time they open the site on their first device.
+- **Game numbers:** the site numbers games by kickoff time, so Quarterfinal 1 is the first game played. The Game column in the Sheet (`qf1`, `qf2`, …) keeps its original ids, so go by the Matchup column when entering winners.
 
 ## Step 3: Publish with GitHub Pages
 

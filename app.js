@@ -18,7 +18,8 @@
   };
   const TEAM_CODES = Object.keys(TEAMS);
 
-  // Winners advance without reseeding: QF1/QF2 winners meet, QF3/QF4 winners meet.
+  // Winners advance without reseeding: qf1/qf2 winners meet, qf3/qf4 winners meet.
+  // These ids never change; the labels are renumbered by kickoff time (see orderGames).
   const GAMES = [
     { id: 'qf1', round: 'qf', label: 'Quarterfinal 1', teams: ['GFC', 'SEA'] },
     { id: 'qf2', round: 'qf', label: 'Quarterfinal 2', teams: ['KC', 'LA'] },
@@ -49,6 +50,8 @@
   };
 
   const AVATARS = ['⚽', '🦄', '🐯', '🦊', '🐼', '🐸', '🦖', '🐙', '🦋', '🌈', '🚀', '⭐', '🍕', '🐶', '🐱', '🦁'];
+  // Different from the avatars, since avatars show on the leaderboard for everyone to see.
+  const SECRETS = ['🍎', '🍩', '🎈', '🌵', '🍦', '🎸', '🐢', '🌙', '🔥', '🍉', '🎁', '🧁', '🚲', '👑', '🍀', '💎'];
 
   // ---------- Server rules ----------
   // The same function is in apps-script/Code.gs. Keep the two copies in sync.
@@ -67,9 +70,12 @@
       return out;
     };
     const err = (code, message) => ({ result: { ok: false, error: code, message: message }, player: null });
-    const state = (name, key) => {
+    const secretOf = b => String(b.secret || '').trim().slice(0, 8);
+    // Your secret emoji gets you in on any device. Older players without one use the key saved on their first device.
+    const canUse = (p, b) => p.secret ? secretOf(b) === p.secret : !!p.key && String(b.key || '') === p.key;
+    const state = (name, b) => {
       const p = name ? find(name) : null;
-      const mine = p && p.key && p.key === key ? p : null;
+      const mine = p && canUse(p, b) ? p : null;
       return {
         ok: true,
         now: now,
@@ -78,34 +84,34 @@
           name: q.name,
           avatar: q.avatar,
           hasOriginal: Object.keys(q.original).length > 0,
-          open: !q.key,
+          hasSecret: !!q.secret,
+          open: !q.key && !q.secret,
           original: now >= firstKick ? q.original : {},
           second: lockedOnly(second(q)),
         })),
-        me: mine ? { name: mine.name, avatar: mine.avatar, original: mine.original, second: second(mine) } : null,
+        me: mine ? { name: mine.name, avatar: mine.avatar, hasSecret: !!mine.secret, original: mine.original, second: second(mine) } : null,
       };
     };
 
     if (body.action === 'state') {
-      // A name the organizer reset (blank device key) goes to the next device that asks for it.
+      // Players without a secret emoji yet (or ones the organizer reset) pick one here.
       const p = body.name ? find(body.name) : null;
-      if (p && !p.key && String(body.key || '').length >= 8) {
-        p.key = String(body.key);
+      if (p && !p.secret && secretOf(body) && (!p.key || String(body.key || '') === p.key)) {
+        p.secret = secretOf(body);
         p.updated = now;
-        return { result: state(p.name, p.key), player: p };
+        return { result: state(p.name, body), player: p };
       }
-      return { result: state(body.name, body.key), player: null };
+      return { result: state(body.name, body), player: null };
     }
     if (body.action !== 'save') return err('BAD_REQUEST', 'Unknown request.');
 
     const name = norm(body.name);
-    const key = String(body.key || '');
     if (!name || name.length > 20) return err('BAD_NAME', 'Names need between 1 and 20 letters.');
-    if (key.length < 8) return err('BAD_REQUEST', 'Missing device key.');
     let p = find(name);
-    if (p && p.key && p.key !== key) {
-      return err('NAME_TAKEN', 'Someone is already playing as "' + p.name + '". Try adding your last initial!');
+    if (p && (p.secret || p.key) && !canUse(p, body)) {
+      return err('WRONG_SECRET', 'That’s not the secret emoji for "' + p.name + '". If you’re someone else, try adding your last initial!');
     }
+    if (!(p && p.secret) && !secretOf(body) && !(p && p.key)) return err('NO_SECRET', 'Pick a secret emoji first.');
     const picksIn = body.picks || {};
     let original = p ? p.original : {};
     let secondPicks = p ? p.second : {};
@@ -136,15 +142,15 @@
 
     const avatar = String(body.avatar || '').slice(0, 8) || (p && p.avatar) || '⚽';
     if (!p) {
-      p = { name: name, key: key };
+      p = { name: name, key: '' };
       db.players.push(p);
     }
-    p.key = key;
+    p.secret = p.secret || secretOf(body);
     p.avatar = avatar;
     p.original = original;
     p.second = secondPicks;
     p.updated = now;
-    return { result: state(p.name, key), player: p };
+    return { result: state(p.name, body), player: p };
   }
 
   // ---------- Storage that never throws ----------
@@ -202,11 +208,6 @@
   const saveProfiles = () => store.set(PROFILES, JSON.stringify(profiles));
   const currentProfile = () => profiles.list.find(p => p.name === profiles.current) || null;
   const sameName = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
-  function newKey() {
-    const a = new Uint8Array(12);
-    crypto.getRandomValues(a);
-    return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
-  }
 
   // ---------- App state ----------
   const S = {
@@ -225,6 +226,8 @@
     joinName: '',
     joinAvatar: AVATARS[0],
     joinError: '',
+    joinSecret: '',
+    checking: false,    // checking a secret emoji on the join screen
     modal: null,        // player name whose bracket is open
     saving: false,
     busy: false,        // fetching the latest scoreboard
@@ -319,11 +322,26 @@
     }
   }
 
+  // Number games in the order they're played, so Quarterfinal 1 is the first kickoff.
+  function orderGames() {
+    const rank = { qf: 0, sf: 1, final: 2 };
+    // Ties (like placeholder semifinal times) go to the game whose earlier games start first.
+    const feed = g => g.teams ? S.games[g.id].kickoff : Math.min(...g.from.map(f => feed(GAME[f])));
+    GAMES.sort((a, b) => rank[a.round] - rank[b.round] || S.games[a.id].kickoff - S.games[b.id].kickoff ||
+      feed(a) - feed(b) || a.id.localeCompare(b.id));
+    ['qf', 'sf'].forEach(r => GAMES.filter(g => g.round === r).forEach((g, i) => {
+      g.label = `${r === 'qf' ? 'Quarterfinal' : 'Semifinal'} ${i + 1}`;
+    }));
+  }
+
   // ---------- Talking to the scoreboard ----------
+  const auth = prof => prof ? { name: prof.name, key: prof.key, secret: prof.secret } : {};
+
   function applyState(st) {
     if (!st || !st.ok) throw new Error((st && st.message) || 'Bad response');
     S.offset = Number(st.now) - Date.now();
     st.games.forEach(g => { if (S.games[g.id]) S.games[g.id] = { kickoff: Number(g.kickoff), winner: g.winner || '' }; });
+    orderGames();
     S.players = st.players || [];
     const prof = currentProfile();
     if (st.me && prof) {
@@ -345,7 +363,7 @@
     // Background refreshes only re-render the leaderboard, so typing elsewhere isn't interrupted.
     if (S.loaded && S.view === 'board') render();
     try {
-      applyState(await call({ action: 'state', name: prof && prof.name, key: prof && prof.key }));
+      applyState(await call({ action: 'state', ...auth(prof) }));
       S.error = '';
     } catch (e) {
       S.error = 'We couldn’t reach the scoreboard. Check your internet and try again.';
@@ -361,7 +379,7 @@
     S.saving = true;
     render();
     try {
-      const st = await call({ action: 'save', kind, picks, name: prof.name, key: prof.key, avatar: prof.avatar });
+      const st = await call({ action: 'save', kind, picks, avatar: prof.avatar, ...auth(prof) });
       if (!st.ok) {
         toast(st.message || 'Something went wrong. Try again!');
         return false;
@@ -396,6 +414,7 @@
     else if (S.view === 'board') body = viewBoard();
     else if (S.view === 'rules') body = viewRules();
     else if (!prof || S.joining) body = viewWelcome();
+    else if (S.me && S.me.hasSecret === false) body = viewPickSecret();
     else if (S.view === 'second') body = viewSecond();
     else body = viewMine();
 
@@ -467,23 +486,54 @@
         </section>` : ''}
       ${showForm ? `
         <form class="card" data-form="join" autocomplete="off">
-          <h2>${list.length ? 'Add a new player' : 'Let’s get you playing!'}</h2>
+          <h2>${list.length ? 'Add a player' : 'Let’s get you playing!'}</h2>
+          <p class="hint">Already playing on another phone or computer? Type the same name and tap your secret emoji.</p>
           <label class="field-label" for="join-name">What’s your name?</label>
           <input id="join-name" class="input" name="name" maxlength="20" value="${esc(S.joinName)}" placeholder="Type your name" enterkeyhint="done">
           <p class="hint">Your first name is great. Add a last initial if someone has the same name.</p>
           <p class="field-label">Pick your emoji:</p>
           <p class="hint">It shows up next to your name on the leaderboard.</p>
-          <div class="avatar-grid" role="radiogroup" aria-label="Pick your emoji">
-            ${AVATARS.map(a => `
-              <button type="button" class="avatar ${a === S.joinAvatar ? 'on' : ''}" role="radio" aria-checked="${a === S.joinAvatar}" data-action="avatar" data-emoji="${a}">${a}</button>`).join('')}
-          </div>
+          ${emojiGrid(AVATARS, S.joinAvatar, 'avatar', 'Pick your emoji')}
+          <p class="field-label">Pick your secret emoji 🤫</p>
+          <p class="hint">Remember it and don’t tell! You’ll tap it to play on another phone or computer.</p>
+          ${emojiGrid(SECRETS, S.joinSecret, 'join-secret', 'Pick your secret emoji')}
           ${S.joinError ? `<p class="form-error" role="alert">${esc(S.joinError)}</p>` : ''}
           <div class="row">
-            <button class="btn primary big" type="submit">Let’s go! 🚀</button>
+            <button class="btn primary big" type="submit" ${S.checking ? 'disabled' : ''}>${S.checking ? '<span class="spin" aria-hidden="true">⚽</span> Checking…' : 'Let’s go! 🚀'}</button>
             ${list.length ? `<button class="btn ghost" type="button" data-action="cancel-join">Cancel</button>` : ''}
           </div>
         </form>` : ''}
     `;
+  }
+
+  function emojiGrid(list, current, action, label) {
+    return `<div class="avatar-grid" role="radiogroup" aria-label="${label}">
+      ${list.map(a => `
+        <button type="button" class="avatar ${a === current ? 'on' : ''}" role="radio" aria-checked="${a === current}" data-action="${action}" data-emoji="${a}">${a}</button>`).join('')}
+    </div>`;
+  }
+
+  // Players who joined before secret emojis existed pick one, once.
+  function viewPickSecret() {
+    return `<section class="card">
+      <h2>Hi ${esc(S.me.name)}! Pick a secret emoji 🤫</h2>
+      <p>Now you can play on any phone or computer. Just type your name and tap your secret emoji.</p>
+      <p class="hint">Remember it and don’t tell anyone!</p>
+      ${emojiGrid(SECRETS, S.joinSecret, 'join-secret', 'Pick your secret emoji')}
+      <div class="row">
+        <button class="btn primary big" data-action="set-secret" ${!S.joinSecret || S.checking ? 'disabled' : ''}>${S.checking ? '<span class="spin" aria-hidden="true">⚽</span> Saving…' : 'Save my secret emoji'}</button>
+      </div>
+    </section>`;
+  }
+
+  // A reminder, tucked away so it isn't on screen for everyone to see.
+  function secretReminder() {
+    const prof = currentProfile();
+    if (!prof || !prof.secret) return '';
+    return `<details class="card secret-note">
+      <summary>📱 Play on another phone or computer</summary>
+      <p>Type <strong>${esc(prof.name)}</strong> and tap your secret emoji: <span class="secret-emoji">${esc(prof.secret)}</span></p>
+    </details>`;
   }
 
   function lockBanner() {
@@ -504,7 +554,8 @@
           <h2>Hi ${esc(me.name)}! Ready to make your picks?</h2>
           <p>There are 7 games. Just tap who you think will win each one.</p>
           <button class="btn primary big" data-action="start-picks">Make my picks! 🏆</button>
-        </section>`;
+        </section>
+        ${secretReminder()}`;
     }
     if (!has) {
       return `<section class="card center">
@@ -512,7 +563,8 @@
           <h2>The first bracket is locked</h2>
           <p>The games have started, so it’s too late for a first bracket. But you can still play <strong>Second Chance</strong>!</p>
           <button class="btn primary big" data-action="nav" data-view="second">Play Second Chance 🔁</button>
-        </section>`;
+        </section>
+        ${secretReminder()}`;
     }
 
     const champ = me.original.final;
@@ -528,7 +580,8 @@
         <div class="row center-row">
           <button class="btn secondary" data-action="start-picks">✏️ Change my picks</button>
         </div>`}
-      ${bracket(me.original, { useResults: false })}`;
+      ${bracket(me.original, { useResults: false })}
+      ${secretReminder()}`;
   }
 
   function scoreStrip(picks) {
@@ -826,9 +879,27 @@
       S.me = { name: p.name, avatar: p.avatar, original: {}, second: {}, isNew: true };
       S.loaded = false; render(); load();
     },
-    'new-player'() { S.joining = true; S.joinName = ''; S.joinError = ''; render(); focusName(); },
+    'new-player'() { S.joining = true; S.joinName = ''; S.joinSecret = ''; S.joinError = ''; render(); focusName(); },
     'cancel-join'() { S.joining = false; S.joinError = ''; render(); },
     avatar(el) { S.joinAvatar = el.dataset.emoji; render(); },
+    'join-secret'(el) { S.joinSecret = el.dataset.emoji; S.joinError = ''; render(); },
+    async 'set-secret'() {
+      const prof = currentProfile();
+      S.checking = true; render();
+      try {
+        const st = await call({ action: 'state', ...auth(prof), secret: S.joinSecret });
+        if (st.me && st.me.hasSecret) {
+          prof.secret = S.joinSecret; saveProfiles();
+          applyState(st);
+          toast('Secret emoji saved! 🤫');
+        } else {
+          toast('Something went wrong. Try again!');
+        }
+      } catch (e) {
+        toast('Could not save. Check your internet and try again.');
+      }
+      S.checking = false; S.joinSecret = ''; render();
+    },
     'start-picks'() {
       S.draft = { picks: { ...(S.me.original || {}) }, step: 0 };
       render(); window.scrollTo(0, 0);
@@ -867,30 +938,55 @@
     refresh() { load(); },
   };
 
-  function join() {
+  async function join() {
     const name = S.joinName.trim().replace(/\s+/g, ' ');
     if (!name) { S.joinError = 'Type your name first!'; return render(); }
-    const local = profiles.list.find(p => sameName(p.name, name));
+    if (!S.joinSecret) { S.joinError = 'Tap a secret emoji!'; return render(); }
+    const secret = S.joinSecret;
     const taken = S.players.find(p => sameName(p.name, name));
-    if (local) {
-      profiles.current = local.name;
-    } else if (taken && !taken.open) {
-      S.joinError = `Someone is already playing as “${name}”. Try adding your last initial, like “${name} B.” If that’s really you on a new phone or computer, ask the organizer to reset your name.`;
+    const local = profiles.list.find(p => sameName(p.name, name));
+
+    if (taken && !taken.hasSecret && !taken.open && !local) {
+      S.joinError = `“${taken.name}” hasn’t picked a secret emoji yet. Open the site on the phone or computer you used first, or ask the organizer to reset your name. If you’re someone else, add your last initial, like “${name} B.”`;
       return render();
-    } else {
-      // A reset name keeps its spelling and picks; loading below claims it for this device.
-      profiles.list.push({ name: taken ? taken.name : name, key: newKey(), avatar: taken ? taken.avatar : S.joinAvatar });
-      profiles.current = taken ? taken.name : name;
     }
-    saveProfiles();
-    const p = currentProfile();
-    const fresh = !local && !taken;
-    S.joining = false; S.joinError = ''; S.joinName = ''; S.view = 'mine';
-    S.me = { name: p.name, avatar: p.avatar, original: {}, second: {}, isNew: true };
-    if (fresh && !originalLocked()) S.draft = { picks: {}, step: 0 };
+    if (taken) {
+      // Already playing somewhere: the secret emoji (or this device, for older players) has to match.
+      S.checking = true; S.joinError = ''; render();
+      let st;
+      try {
+        st = await call({ action: 'state', name: taken.name, key: local && local.key, secret });
+      } catch (e) {
+        st = null;
+      }
+      S.checking = false;
+      if (!st || !st.ok) { toast('We couldn’t reach the scoreboard. Try again!'); return render(); }
+      if (!st.me) {
+        S.joinError = `That’s not the secret emoji for “${taken.name}.” Try again! If you’re someone else, add your last initial, like “${name} B.”`;
+        return render();
+      }
+      const prof = local || { name: taken.name };
+      if (!local) profiles.list.push(prof);
+      prof.name = taken.name; prof.avatar = st.me.avatar; prof.secret = secret;
+      profiles.current = prof.name; saveProfiles();
+      S.joining = false; S.joinName = ''; S.joinSecret = ''; S.view = 'mine';
+      S.second = null; S.secondDirty = false; S.draft = null;
+      applyState(st);
+      setHash(); render();
+      toast(`Welcome back, ${prof.name}! 👋`);
+      return;
+    }
+
+    // Someone new.
+    const prof = local || { name };
+    if (!local) profiles.list.push(prof);
+    prof.avatar = S.joinAvatar; prof.secret = secret;
+    profiles.current = prof.name; saveProfiles();
+    S.joining = false; S.joinError = ''; S.joinName = ''; S.joinSecret = ''; S.view = 'mine';
+    S.me = { name: prof.name, avatar: prof.avatar, original: {}, second: {}, isNew: true };
+    if (!originalLocked()) S.draft = { picks: {}, step: 0 };
     setHash();
     render();
-    if (!fresh) { S.loaded = false; load(); }
   }
 
   function focusName() {
@@ -998,7 +1094,7 @@
             const t = g.teams || g.from.map(f => picks[f]);
             picks[g.id] = t[Math.random() < 0.5 ? 0 : 1];
           });
-          db.players.push({ name, avatar, key: newKey(), original: picks, second: {}, updated: Date.now() });
+          db.players.push({ name, avatar, key: '', secret: SECRETS[0], original: picks, second: {}, updated: Date.now() });
         });
         Demo.write(db);
         toast('Added 5 pretend players.');
@@ -1008,6 +1104,7 @@
     });
   }
 
+  orderGames();
   S.view = viewFromHash();
   window.addEventListener('hashchange', () => { S.view = viewFromHash(); S.draft = null; render(); });
   renderDemo();
