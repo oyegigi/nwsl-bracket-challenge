@@ -61,6 +61,7 @@ window.TEAM_INFO = {
       watch: [
         ['Trinity Rodman', 'Scored her 12th goal of the season on the last day of the season.'],
       ],
+      video: ['Washington Spirit’s best plays from September (YouTube)', 'https://www.youtube.com/watch?v=sT5QkW9KrWE'],
     },
     KC: {
       home: 'Kansas City',
@@ -75,6 +76,7 @@ window.TEAM_INFO = {
       watch: [
         ['Temwa Chawinga', 'Won NWSL MVP (best player) two years in a row. She scored the first hat trick (3 goals in one game) of 2026.'],
       ],
+      video: ['KC Current highlights (YouTube)', 'https://youtu.be/OL23ZgfHiaA'],
     },
     LA: {
       home: 'Los Angeles',
@@ -92,6 +94,7 @@ window.TEAM_INFO = {
         ['Ary Borges', 'Attacker to watch.'],
         ['Angelina Anderson', 'Goalkeeper who saved a penalty kick against Gotham.'],
       ],
+      video: ['Angel City highlights (YouTube)', 'https://youtu.be/k6JbxviohCs'],
     },
     POR: {
       home: 'Portland, Oregon',
@@ -104,6 +107,7 @@ window.TEAM_INFO = {
         ['Sophia Wilson', 'Scored 15 goals in 28 games, including 2 on the last day of the season.'],
         ['Olivia Moultrie', 'In May she was tied for the league lead in assists (passes that set up a goal).'],
       ],
+      video: ['Portland Thorns highlights (YouTube)', 'https://youtu.be/ev5LAToNdrA'],
     },
     UTA: {
       home: 'Utah',
@@ -120,6 +124,7 @@ window.TEAM_INFO = {
         ['Kaleigh Riehl', 'Defender who helped get five shutouts in a row.'],
         ['Kate Del Fava', 'Defender who helped get five shutouts in a row.'],
       ],
+      video: ['Utah Royals highlights (YouTube)', 'https://youtu.be/DW-vn5xhOS4'],
     },
     SEA: {
       home: 'Seattle, Washington',
@@ -135,6 +140,7 @@ window.TEAM_INFO = {
         ['Jess Fishlock', 'Team captain, retiring after this season. The clinching game was her last regular-season home game.'],
       ],
       cheer: 'Every playoff game could be Jess Fishlock’s last. Seattle is playing for her.',
+      video: ['Goal: Jess Fishlock’s 50th career goal (YouTube)', 'https://youtu.be/18SeE9MDjo4'],
     },
   },
 };
