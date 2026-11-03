@@ -232,6 +232,7 @@
     saving: false,
     busy: false,        // fetching the latest scoreboard
     teamSort: 'points', // column the Teams comparison table is sorted by
+    team: null,         // team shown on the Teams page
   };
 
   const now = () => Date.now() + S.offset;
@@ -447,13 +448,13 @@
     const tabs = [
       ['mine', '📝', 'My Bracket'],
       ['second', '🔁', 'Second Chance'],
-      ['board', '🏅', 'Leaderboard'],
+      ['board', '🏅', 'Leaderboard', 'Leaders'],
       ['teams', '📊', 'Teams'],
       ['rules', '❓', 'How to Play'],
     ];
-    return `<nav class="tabs" aria-label="Sections">${tabs.map(([id, icon, label]) => `
+    return `<nav class="tabs" aria-label="Sections">${tabs.map(([id, icon, label, shortLabel]) => `
       <button class="tab ${S.view === id ? 'active' : ''}" data-action="nav" data-view="${id}" ${S.view === id ? 'aria-current="page"' : ''}>
-        <span class="tab-icon" aria-hidden="true">${icon}</span><span class="tab-label">${label}</span>
+        <span class="tab-icon" aria-hidden="true">${icon}</span><span class="tab-label">${shortLabel ? `<span class="long">${label}</span><span class="short">${shortLabel}</span>` : label}</span>
       </button>`).join('')}</nav>`;
   }
 
@@ -825,6 +826,7 @@
   const SEEDED = TEAM_CODES.filter(c => INFO.teams[c]).sort((a, b) => TEAMS[a].seed - TEAMS[b].seed);
   const diff = t => t.scored - t.allowed;
   const signed = n => (n > 0 ? '+' : '') + n;
+  const short = c => (INFO.teams[c] && INFO.teams[c].short) || TEAMS[c].name;
   const TEAM_COLS = [
     ['seed', 'Seed', c => TEAMS[c].seed, true],
     ['points', 'Points', c => INFO.teams[c].points],
@@ -833,8 +835,9 @@
     ['lost', 'Losses', c => INFO.teams[c].lost, true],
     ['scored', 'Goals scored', c => INFO.teams[c].scored],
     ['allowed', 'Goals let in', c => INFO.teams[c].allowed, true],
-    ['diff', 'Goal diff', c => diff(INFO.teams[c])],
+    ['diff', 'Goal difference', c => diff(INFO.teams[c])],
   ];
+  const GD_HELP = 'Goals scored minus goals let in. Bigger is better!';
 
   // Teams that share the best value, e.g. two teams tied for most goals.
   function leaders(get, low) {
@@ -847,15 +850,22 @@
   function firstGame(code) {
     const g = GAMES.find(x => x.teams && x.teams.includes(code));
     const other = g.teams.find(t => t !== code);
-    return `${esc(g.label)} vs ${TEAMS[other].emoji} ${esc(TEAMS[other].name)} · ${fmtTime(S.games[g.id].kickoff)}`;
+    return `${esc(g.label)} vs ${esc(TEAMS[other].name)} · ${fmtTime(S.games[g.id].kickoff)}`;
+  }
+
+  // Start on the team you picked to win it all, or the top seed.
+  function shownTeam() {
+    if (INFO.teams[S.team]) return S.team;
+    const champ = S.me && S.me.original && S.me.original.final;
+    return INFO.teams[champ] ? champ : SEEDED[0];
   }
 
   function teamCard(code) {
     const t = INFO.teams[code], team = TEAMS[code];
     const w = winnerOf(GAMES.find(x => x.teams && x.teams.includes(code)).id);
-    return `<article class="card team-card" id="team-${code}">
+    return `<article class="card team-card" id="team-card" aria-live="polite">
       <header class="team-band" style="${teamStyle(code)}">
-        <span class="badge lg">${team.emoji}</span>
+        <span class="badge lg" aria-hidden="true">${team.emoji}</span>
         <div>
           <h3>${esc(team.name)}</h3>
           <p>#${team.seed} seed · ${esc(t.home)}</p>
@@ -863,64 +873,79 @@
       </header>
       <div class="team-body">
         <p class="star-stat"><span aria-hidden="true">⭐</span> <span><strong>Star stat:</strong> ${esc(t.star)}</span></p>
+        <div class="record" aria-label="${t.won} wins, ${t.tied} ties, ${t.lost} losses">
+          <div class="rec won"><span class="stat-num">${t.won}</span><span class="stat-lbl">Wins</span></div>
+          <div class="rec tied"><span class="stat-num">${t.tied}</span><span class="stat-lbl">Ties</span></div>
+          <div class="rec lost"><span class="stat-num">${t.lost}</span><span class="stat-lbl">Losses</span></div>
+        </div>
         <div class="stat-grid">
-          <div><span class="stat-num">${t.won}-${t.tied}-${t.lost}</span><span class="stat-lbl">Wins-Ties-Losses</span></div>
           <div><span class="stat-num">${t.points}</span><span class="stat-lbl">Points</span></div>
+          <div><span class="stat-num">${esc(t.last)}</span><span class="stat-lbl">${esc(t.lastLabel || 'Last year')}</span></div>
           <div><span class="stat-num">${t.scored}</span><span class="stat-lbl">Goals scored</span></div>
           <div><span class="stat-num">${t.allowed}</span><span class="stat-lbl">Goals let in</span></div>
-          <div><span class="stat-num">${signed(diff(t))}</span><span class="stat-lbl">Goal diff</span></div>
-          <div><span class="stat-num small">${esc(t.last)}</span><span class="stat-lbl">Last year</span></div>
+          <div class="wide">
+            <span class="stat-num">${signed(diff(t))}</span>
+            <details class="gd-help"><summary>Goal difference <span aria-hidden="true">ⓘ</span><span class="sr-only">: what’s that?</span></summary><p>${GD_HELP}</p></details>
+          </div>
         </div>
-        ${t.watch && t.watch.length ? `<h4>👀 Players to watch</h4>
+        ${t.watch && t.watch.length ? `<h4><span aria-hidden="true">👀</span> Players to watch</h4>
           <ul class="watch">${t.watch.map(([n, why]) => `<li><strong>${esc(n)}</strong><span>${esc(why)}</span></li>`).join('')}</ul>` : ''}
-        ${t.facts && t.facts.length ? `<h4>💡 Did you know?</h4>
+        ${t.facts && t.facts.length ? `<h4><span aria-hidden="true">💡</span> Did you know?</h4>
           <ul class="facts">${t.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
-        ${t.quote ? `<p class="team-quote">“${esc(t.quote)}”</p>` : ''}
+        ${t.cheer ? `<h4><span aria-hidden="true">📣</span> Why cheer for them?</h4><p>${esc(t.cheer)}</p>` : ''}
         <p class="team-next"><strong>${w ? (w === code ? '✓ Won' : '✗ Lost') : 'First game'}:</strong> ${firstGame(code)}</p>
-        ${t.video ? `<a class="btn secondary small" href="${esc(t.video[1])}" target="_blank" rel="noopener">▶️ ${esc(t.video[0])}</a>` : ''}
+        ${t.video ? `<p class="hint">${esc(t.video[0])}</p>
+          <a class="btn secondary small video-btn" href="${esc(t.video[1])}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Watch highlights</a>` : ''}
       </div>
     </article>`;
+  }
+
+  function compareTable() {
+    const col = TEAM_COLS.find(c => c[0] === S.teamSort) || TEAM_COLS[1];
+    const rows = [...SEEDED].sort((a, b) => (col[3] ? col[2](a) - col[2](b) : col[2](b) - col[2](a)) || TEAMS[a].seed - TEAMS[b].seed);
+    return `<div class="table-wrap">
+      <table class="compare">
+        <thead><tr><th scope="col" class="cmp-head">Team</th>${TEAM_COLS.map(([id, label]) => `
+          <th scope="col" aria-sort="${id === col[0] ? (col[3] ? 'ascending' : 'descending') : 'none'}">
+            <button data-action="team-sort" data-col="${id}" class="${id === col[0] ? 'on' : ''}">${label}${id === col[0] ? ' ▾' : ''}</button>
+          </th>`).join('')}</tr></thead>
+        <tbody>${rows.map(c => `<tr>
+          <th scope="row"><span class="cmp-team">${badge(c, 'sm')} ${esc(short(c))}</span></th>
+          ${TEAM_COLS.map(([id, , get]) => `<td class="${id === col[0] ? 'on' : ''}">${id === 'diff' ? signed(get(c)) : get(c)}</td>`).join('')}
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
   }
 
   function viewTeams() {
     if (!SEEDED.length) return `<section class="card"><h2>Team info is coming soon!</h2></section>`;
     const T = c => INFO.teams[c];
-    const col = TEAM_COLS.find(c => c[0] === S.teamSort) || TEAM_COLS[1];
-    const rows = [...SEEDED].sort((a, b) => (col[3] ? col[2](a) - col[2](b) : col[2](b) - col[2](a)) || TEAMS[a].seed - TEAMS[b].seed);
+    const cur = shownTeam();
     const quick = [
-      `⚽ <strong>Most goals:</strong> ${names(leaders(c => T(c).scored))} (${Math.max(...SEEDED.map(c => T(c).scored))})`,
-      `🧤 <strong>Best defense:</strong> ${names(leaders(c => T(c).allowed, true))} (only ${Math.min(...SEEDED.map(c => T(c).allowed))} goals let in)`,
-      `➕ <strong>Best goal difference:</strong> ${names(leaders(c => diff(T(c))))} (${signed(Math.max(...SEEDED.map(c => diff(T(c)))))})`,
+      `<span aria-hidden="true">⚽</span> <strong>Most goals:</strong> ${names(leaders(c => T(c).scored))} (${Math.max(...SEEDED.map(c => T(c).scored))})`,
+      `<span aria-hidden="true">🧤</span> <strong>Best defense:</strong> ${names(leaders(c => T(c).allowed, true))} (only ${Math.min(...SEEDED.map(c => T(c).allowed))} goals let in)`,
+      `<span aria-hidden="true">➕</span> <strong>Best goal difference:</strong> ${names(leaders(c => diff(T(c))))} (${signed(Math.max(...SEEDED.map(c => diff(T(c)))))})`,
       ...(INFO.extraFacts || []).map(esc),
     ];
     return `
       <section class="card intro">
-        <h2>📊 Meet the teams</h2>
-        <ul class="facts">${(INFO.bigPicture || []).map(f => `<li>${esc(f)}</li>`).join('')}</ul>
-        <div class="team-jump" aria-label="Jump to a team">
-          ${SEEDED.map(c => `<a href="#team-${c}" data-action="jump-team" data-team="${c}" class="jump" aria-label="${esc(TEAMS[c].name)}">${badge(c)}</a>`).join('')}
+        <h2><span aria-hidden="true">📊</span> Meet the teams</h2>
+        ${(INFO.bigPicture || []).map(f => `<p>${esc(f)}</p>`).join('')}
+        <p class="field-label">Tap a team to see its stats:</p>
+        <div class="team-picker" role="group" aria-label="Pick a team">
+          ${SEEDED.map(c => `<button class="pick-chip ${c === cur ? 'on' : ''}" data-action="pick-team" data-team="${c}" aria-pressed="${c === cur}">
+            ${badge(c)}<span>${esc(short(c))}</span></button>`).join('')}
         </div>
+        <button class="btn ghost small" data-action="jump-compare">📊 Compare all teams ↓</button>
       </section>
-      <section class="card">
-        <h2>Quick stat facts</h2>
-        <ul class="facts plain">${quick.map(f => `<li>${f}</li>`).join('')}</ul>
-      </section>
-      ${SEEDED.map(teamCard).join('')}
-      <section class="card">
-        <h2>Compare the teams</h2>
+      ${teamCard(cur)}
+      <section class="card" id="compare">
+        <h2>Compare all teams</h2>
         <p class="hint">Tap a column to sort by it.<span class="swipe-hint"> Swipe sideways to see more.</span></p>
-        <div class="table-wrap">
-          <table class="compare">
-            <thead><tr><th scope="col">Team</th>${TEAM_COLS.map(([id, label]) => `
-              <th scope="col" aria-sort="${id === col[0] ? (col[3] ? 'ascending' : 'descending') : 'none'}">
-                <button data-action="team-sort" data-col="${id}" class="${id === col[0] ? 'on' : ''}">${label}${id === col[0] ? ' ▾' : ''}</button>
-              </th>`).join('')}</tr></thead>
-            <tbody>${rows.map(c => `<tr>
-              <th scope="row"><span class="cmp-team">${badge(c, 'sm')} ${esc(TEAMS[c].name)}</span></th>
-              ${TEAM_COLS.map(([id, , get]) => `<td class="${id === col[0] ? 'on' : ''}">${id === 'diff' ? signed(get(c)) : get(c)}</td>`).join('')}
-            </tr>`).join('')}</tbody>
-          </table>
-        </div>
+        ${compareTable()}
+        <p class="hint"><strong>Goal difference:</strong> ${GD_HELP}</p>
+        <h3 class="sub-head">Quick stat facts</h3>
+        <ul class="facts plain">${quick.map(f => `<li>${f}</li>`).join('')}</ul>
         ${INFO.seasonNote ? `<p class="hint">${esc(INFO.seasonNote)}</p>` : ''}
       </section>`;
   }
@@ -1050,9 +1075,10 @@
       const wrap = document.querySelector('.table-wrap'), th = wrap && wrap.querySelector('thead th[aria-sort="ascending"], thead th[aria-sort="descending"]');
       if (th) wrap.scrollLeft = Math.max(0, th.offsetLeft - wrap.querySelector('thead th').offsetWidth - 8);
     },
-    'jump-team'(el) {
-      const card = document.getElementById('team-' + el.dataset.team);
-      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    'pick-team'(el) { S.team = el.dataset.team; render(); },
+    'jump-compare'() {
+      const el = document.getElementById('compare'), tabs = document.querySelector('.tabs');
+      if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - (tabs ? tabs.offsetHeight + 16 : 0));
     },
     refresh() { load(); },
   };
@@ -1134,6 +1160,7 @@
   // Keep countdowns and locks fresh without wiping out typing.
   setInterval(() => {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    if (S.view === 'teams') return; // nothing ticking there, and re-rendering would close an open ⓘ
     render();
   }, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.loaded) load(); });

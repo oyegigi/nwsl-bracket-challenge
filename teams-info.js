@@ -1,10 +1,10 @@
 // Team facts for the Teams page. Edit freely: the page reads everything from here.
+// short: name used in the team picker and table. cheer: the "Why cheer for them?" line.
 // Stats are the 2026 regular season final table (30 games each).
 window.TEAM_INFO = {
   bigPicture: [
     'Eight teams made the playoffs. Lose once and you’re out!',
     'The last two teams standing play for the 2026 NWSL Championship on Nov 21 at Audi Field in Washington, D.C.',
-    'Ashley Sanchez of North Carolina won the Golden Boot for scoring the most goals in the league, but her team just missed the playoffs in 9th place.',
   ],
   seasonNote: '2026 was the first season with 16 teams, so everyone played 30 games. In 2025 there were 14 teams and only 26 games, so comparing points across the two years isn’t quite fair.',
   extraFacts: [
@@ -15,11 +15,13 @@ window.TEAM_INFO = {
   teams: {
     GFC: {
       home: 'New Jersey & New York',
-      last: '8th, then won the championship! 🏆',
+      short: 'Gotham',
+      last: '8th 🏆', lastLabel: 'Last year: won the title!',
       won: 18, tied: 7, lost: 5, points: 61, scored: 39, allowed: 23,
       star: 'Club-record 61 points and their first-ever Shield',
       facts: [
         'They won the Shield, which goes to the team with the best regular season.',
+        'Their 61 points broke the club record of 56 from 2024.',
         'Last year they won the championship as the 8th seed, the lowest team in the playoffs.',
         'They get to play at home all through the playoffs.',
       ],
@@ -28,11 +30,12 @@ window.TEAM_INFO = {
         ['Guro Reiten', 'Scored the other goal that clinched the Shield.'],
         ['Rose Lavelle', 'Back from injury and ready for the playoffs.'],
       ],
-      quote: 'Last year they were the underdogs. This year they’re the team everyone’s chasing.',
+      cheer: 'Last year they were the underdogs. This year they’re the team everyone’s chasing.',
       video: ['Highlights: Gotham’s 2-0 win at Chicago (Apr 29)', 'https://www.gothamfc.com/news/extended-match-highlights-gotham-fc-wins-in-the-windy-city-20'],
     },
     SD: {
       home: 'San Diego, California',
+      short: 'Wave',
       last: '6th',
       won: 18, tied: 4, lost: 8, points: 58, scored: 45, allowed: 31,
       star: 'Club records for wins (18) and points (58)',
@@ -48,6 +51,7 @@ window.TEAM_INFO = {
     },
     WAS: {
       home: 'Washington, D.C.',
+      short: 'Spirit',
       last: '2nd',
       won: 17, tied: 4, lost: 9, points: 55, scored: 43, allowed: 28,
       star: 'Trinity Rodman scored her 12th goal of the season on the last day',
@@ -60,6 +64,7 @@ window.TEAM_INFO = {
     },
     KC: {
       home: 'Kansas City',
+      short: 'Current',
       last: '1st',
       won: 16, tied: 5, lost: 9, points: 53, scored: 54, allowed: 39,
       star: 'Never lost at home all season: 11 wins, 4 ties',
@@ -73,6 +78,7 @@ window.TEAM_INFO = {
     },
     LA: {
       home: 'Los Angeles',
+      short: 'Angel City',
       last: '11th',
       won: 15, tied: 7, lost: 8, points: 52, scored: 54, allowed: 32,
       star: 'Taylor Suarez scored 21 seconds after coming in, an NWSL record for a sub',
@@ -89,6 +95,7 @@ window.TEAM_INFO = {
     },
     POR: {
       home: 'Portland, Oregon',
+      short: 'Thorns',
       last: '3rd',
       won: 14, tied: 8, lost: 8, points: 50, scored: 50, allowed: 41,
       star: 'Sophia Wilson scored 15 goals, 3rd most in the league',
@@ -100,6 +107,7 @@ window.TEAM_INFO = {
     },
     UTA: {
       home: 'Utah',
+      short: 'Royals',
       last: '12th',
       won: 14, tied: 5, lost: 11, points: 47, scored: 44, allowed: 39,
       star: 'Five shutouts in a row, from April 3 to May 10',
@@ -115,6 +123,7 @@ window.TEAM_INFO = {
     },
     SEA: {
       home: 'Seattle, Washington',
+      short: 'Reign',
       last: '5th',
       won: 14, tied: 5, lost: 11, points: 47, scored: 37, allowed: 33,
       star: 'A season-high crowd of 16,095 watched them clinch the last playoff spot',
@@ -125,7 +134,7 @@ window.TEAM_INFO = {
         ['Jordyn Bugg', 'Young center back who scored in the 68th minute to clinch a playoff spot.'],
         ['Jess Fishlock', 'Team captain, retiring after this season. The clinching game was her last regular-season home game.'],
       ],
-      quote: 'Every playoff game could be Jess Fishlock’s last. Seattle is playing for her.',
+      cheer: 'Every playoff game could be Jess Fishlock’s last. Seattle is playing for her.',
     },
   },
 };
