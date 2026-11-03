@@ -231,6 +231,7 @@
     modal: null,        // player name whose bracket is open
     saving: false,
     busy: false,        // fetching the latest scoreboard
+    teamSort: 'points', // column the Teams comparison table is sorted by
   };
 
   const now = () => Date.now() + S.offset;
@@ -409,9 +410,10 @@
     }
     const prof = currentProfile();
     let body;
-    // The leaderboard and rules are open to anyone; picking needs a name.
+    // The leaderboard, teams and rules are open to anyone; picking needs a name.
     if (S.error) body = viewError();
     else if (S.view === 'board') body = viewBoard();
+    else if (S.view === 'teams') body = viewTeams();
     else if (S.view === 'rules') body = viewRules();
     else if (!prof || S.joining) body = viewWelcome();
     else if (S.me && S.me.hasSecret === false) body = viewPickSecret();
@@ -432,7 +434,7 @@
             <span class="who-avatar">${esc(prof.avatar)}</span>
             <span class="who-name">${esc(prof.name)}</span>
             <span class="who-switch">switch</span>
-          </button>` : (S.view === 'board' || S.view === 'rules') ? `
+          </button>` : PUBLIC_VIEWS.includes(S.view) ? `
           <button class="btn primary small" data-action="nav" data-view="mine">Play ⚽</button>` : ''}
       </header>
       ${S.error ? '' : nav()}
@@ -446,6 +448,7 @@
       ['mine', '📝', 'My Bracket'],
       ['second', '🔁', 'Second Chance'],
       ['board', '🏅', 'Leaderboard'],
+      ['teams', '📊', 'Teams'],
       ['rules', '❓', 'How to Play'],
     ];
     return `<nav class="tabs" aria-label="Sections">${tabs.map(([id, icon, label]) => `
@@ -817,6 +820,111 @@
     </div>`;
   }
 
+  // ---------- Teams page ----------
+  const INFO = window.TEAM_INFO || { teams: {} };
+  const SEEDED = TEAM_CODES.filter(c => INFO.teams[c]).sort((a, b) => TEAMS[a].seed - TEAMS[b].seed);
+  const diff = t => t.scored - t.allowed;
+  const signed = n => (n > 0 ? '+' : '') + n;
+  const TEAM_COLS = [
+    ['seed', 'Seed', c => TEAMS[c].seed, true],
+    ['points', 'Points', c => INFO.teams[c].points],
+    ['won', 'Wins', c => INFO.teams[c].won],
+    ['tied', 'Ties', c => INFO.teams[c].tied],
+    ['lost', 'Losses', c => INFO.teams[c].lost, true],
+    ['scored', 'Goals scored', c => INFO.teams[c].scored],
+    ['allowed', 'Goals let in', c => INFO.teams[c].allowed, true],
+    ['diff', 'Goal diff', c => diff(INFO.teams[c])],
+  ];
+
+  // Teams that share the best value, e.g. two teams tied for most goals.
+  function leaders(get, low) {
+    const best = (low ? Math.min : Math.max)(...SEEDED.map(get));
+    return SEEDED.filter(c => get(c) === best);
+  }
+  const names = codes => codes.map(c => esc(TEAMS[c].name)).join(' and ');
+
+  // The quarterfinal each team plays first.
+  function firstGame(code) {
+    const g = GAMES.find(x => x.teams && x.teams.includes(code));
+    const other = g.teams.find(t => t !== code);
+    return `${esc(g.label)} vs ${TEAMS[other].emoji} ${esc(TEAMS[other].name)} · ${fmtTime(S.games[g.id].kickoff)}`;
+  }
+
+  function teamCard(code) {
+    const t = INFO.teams[code], team = TEAMS[code];
+    const w = winnerOf(GAMES.find(x => x.teams && x.teams.includes(code)).id);
+    return `<article class="card team-card" id="team-${code}">
+      <header class="team-band" style="${teamStyle(code)}">
+        <span class="badge lg">${team.emoji}</span>
+        <div>
+          <h3>${esc(team.name)}</h3>
+          <p>#${team.seed} seed · ${esc(t.home)}</p>
+        </div>
+      </header>
+      <div class="team-body">
+        <p class="star-stat"><span aria-hidden="true">⭐</span> <span><strong>Star stat:</strong> ${esc(t.star)}</span></p>
+        <div class="stat-grid">
+          <div><span class="stat-num">${t.won}-${t.tied}-${t.lost}</span><span class="stat-lbl">Wins-Ties-Losses</span></div>
+          <div><span class="stat-num">${t.points}</span><span class="stat-lbl">Points</span></div>
+          <div><span class="stat-num">${t.scored}</span><span class="stat-lbl">Goals scored</span></div>
+          <div><span class="stat-num">${t.allowed}</span><span class="stat-lbl">Goals let in</span></div>
+          <div><span class="stat-num">${signed(diff(t))}</span><span class="stat-lbl">Goal diff</span></div>
+          <div><span class="stat-num small">${esc(t.last)}</span><span class="stat-lbl">Last year</span></div>
+        </div>
+        ${t.watch && t.watch.length ? `<h4>👀 Players to watch</h4>
+          <ul class="watch">${t.watch.map(([n, why]) => `<li><strong>${esc(n)}</strong><span>${esc(why)}</span></li>`).join('')}</ul>` : ''}
+        ${t.facts && t.facts.length ? `<h4>💡 Did you know?</h4>
+          <ul class="facts">${t.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+        ${t.quote ? `<p class="team-quote">“${esc(t.quote)}”</p>` : ''}
+        <p class="team-next"><strong>${w ? (w === code ? '✓ Won' : '✗ Lost') : 'First game'}:</strong> ${firstGame(code)}</p>
+        ${t.video ? `<a class="btn secondary small" href="${esc(t.video[1])}" target="_blank" rel="noopener">▶️ ${esc(t.video[0])}</a>` : ''}
+      </div>
+    </article>`;
+  }
+
+  function viewTeams() {
+    if (!SEEDED.length) return `<section class="card"><h2>Team info is coming soon!</h2></section>`;
+    const T = c => INFO.teams[c];
+    const col = TEAM_COLS.find(c => c[0] === S.teamSort) || TEAM_COLS[1];
+    const rows = [...SEEDED].sort((a, b) => (col[3] ? col[2](a) - col[2](b) : col[2](b) - col[2](a)) || TEAMS[a].seed - TEAMS[b].seed);
+    const quick = [
+      `⚽ <strong>Most goals:</strong> ${names(leaders(c => T(c).scored))} (${Math.max(...SEEDED.map(c => T(c).scored))})`,
+      `🧤 <strong>Best defense:</strong> ${names(leaders(c => T(c).allowed, true))} (only ${Math.min(...SEEDED.map(c => T(c).allowed))} goals let in)`,
+      `➕ <strong>Best goal difference:</strong> ${names(leaders(c => diff(T(c))))} (${signed(Math.max(...SEEDED.map(c => diff(T(c)))))})`,
+      ...(INFO.extraFacts || []).map(esc),
+    ];
+    return `
+      <section class="card intro">
+        <h2>📊 Meet the teams</h2>
+        <ul class="facts">${(INFO.bigPicture || []).map(f => `<li>${esc(f)}</li>`).join('')}</ul>
+        <div class="team-jump" aria-label="Jump to a team">
+          ${SEEDED.map(c => `<a href="#team-${c}" data-action="jump-team" data-team="${c}" class="jump" aria-label="${esc(TEAMS[c].name)}">${badge(c)}</a>`).join('')}
+        </div>
+      </section>
+      <section class="card">
+        <h2>Quick stat facts</h2>
+        <ul class="facts plain">${quick.map(f => `<li>${f}</li>`).join('')}</ul>
+      </section>
+      ${SEEDED.map(teamCard).join('')}
+      <section class="card">
+        <h2>Compare the teams</h2>
+        <p class="hint">Tap a column to sort by it.<span class="swipe-hint"> Swipe sideways to see more.</span></p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th scope="col">Team</th>${TEAM_COLS.map(([id, label]) => `
+              <th scope="col" aria-sort="${id === col[0] ? (col[3] ? 'ascending' : 'descending') : 'none'}">
+                <button data-action="team-sort" data-col="${id}" class="${id === col[0] ? 'on' : ''}">${label}${id === col[0] ? ' ▾' : ''}</button>
+              </th>`).join('')}</tr></thead>
+            <tbody>${rows.map(c => `<tr>
+              <th scope="row"><span class="cmp-team">${badge(c, 'sm')} ${esc(TEAMS[c].name)}</span></th>
+              ${TEAM_COLS.map(([id, , get]) => `<td class="${id === col[0] ? 'on' : ''}">${id === 'diff' ? signed(get(c)) : get(c)}</td>`).join('')}
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        ${INFO.seasonNote ? `<p class="hint">${esc(INFO.seasonNote)}</p>` : ''}
+      </section>`;
+  }
+
   function viewRules() {
     const sched = GAMES.map(g => {
       const t = g.teams ? `${TEAMS[g.teams[0]].emoji} ${esc(TEAMS[g.teams[0]].name)} vs ${TEAMS[g.teams[1]].emoji} ${esc(TEAMS[g.teams[1]].name)}`
@@ -853,7 +961,8 @@
   }
 
   // Each tab has its own address (e.g. .../#leaderboard), so refreshing stays put.
-  const HASHES = { mine: '', second: '#second-chance', board: '#leaderboard', rules: '#how-to-play' };
+  const HASHES = { mine: '', second: '#second-chance', board: '#leaderboard', teams: '#teams', rules: '#how-to-play' };
+  const PUBLIC_VIEWS = ['board', 'teams', 'rules'];
   const viewFromHash = () => Object.keys(HASHES).find(v => HASHES[v] && HASHES[v] === location.hash) || 'mine';
   function setHash() {
     try { history.replaceState(null, '', location.pathname + location.search + HASHES[S.view]); } catch (e) { /* ignore */ }
@@ -935,6 +1044,16 @@
       S.modal = el.dataset.name; render();
     },
     'close-modal'() { S.modal = null; render(); },
+    'team-sort'(el) {
+      S.teamSort = el.dataset.col; render();
+      // On phones the table scrolls sideways; keep the sorted column in view.
+      const wrap = document.querySelector('.table-wrap'), th = wrap && wrap.querySelector('thead th[aria-sort="ascending"], thead th[aria-sort="descending"]');
+      if (th) wrap.scrollLeft = Math.max(0, th.offsetLeft - wrap.querySelector('thead th').offsetWidth - 8);
+    },
+    'jump-team'(el) {
+      const card = document.getElementById('team-' + el.dataset.team);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
     refresh() { load(); },
   };
 

@@ -15,6 +15,7 @@ The site is plain HTML/CSS/JS (no build step). Picks are stored in a Google Shee
 |---|---|
 | `index.html`, `style.css`, `app.js` | The website |
 | `config.js` | Where you paste your Google Sheet web-app link |
+| `teams-info.js` | Facts and stats for the Teams page. Edit the text there to update the page |
 | `apps-script/Code.gs` | The code you paste into your Google Sheet |
 
 ## Step 1: Try it locally (demo mode)
