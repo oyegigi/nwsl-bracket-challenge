@@ -977,6 +977,7 @@
             </div>
             The most you can get is ${MAX_POINTS} points.</div></li>
           <li><span class="step-ico">🔁</span><div><strong>Get a Second Chance!</strong> Once the games start, you get a second bracket. Before each game kicks off, you can change your pick for that game. It has its own score and its own leaderboard, so your first bracket never changes.</div></li>
+          <li><span class="step-ico">✌️</span><div><strong>Want two brackets? Go for it!</strong> You can play under more than one name. Make one bracket for who you <em>think</em> will win and another for who you <em>want</em> to win, like “Zoe” and “Zoe’s Faves.” Each name gets its own secret emoji. Tap your name at the top to switch between them.</div></li>
         </ol>
       </section>
       <section class="card">
