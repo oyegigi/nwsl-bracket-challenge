@@ -325,7 +325,7 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .facts, .watch { margin: 0 0 12px; padding-left: 1.2em; display: grid; gap: 6px; }
 .facts.plain { list-style: none; padding-left: 0; }
-.watch li > strong { display: block; }
+.watch li > strong { display: block; font-weight: 600; font-size: 1.02rem; }
 .team-picker { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 10px; }
 .pick-chip {
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px;
@@ -339,7 +339,10 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 .team-band p { margin: 0; font-size: 1rem; }
 .badge.lg { width: 54px; height: 54px; font-size: 1.7rem; flex: none; background: #fff; box-shadow: inset 0 0 0 3px var(--team-ring); }
 .team-body { padding: 16px 20px 20px; }
-.team-body h4 { font-size: 1.1rem; margin: 16px 0 6px; }
+.team-body h4 {
+  font-size: 1.25rem; font-weight: 700; color: var(--primary-dark);
+  margin: 20px 0 10px; padding-top: 16px; border-top: 2px solid var(--line);
+}
 .star-stat { display: flex; gap: 8px; background: var(--warn-soft); border-radius: 14px; padding: 10px 12px; }
 .record, .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 .stat-grid > div, .rec { background: var(--primary-soft); border-radius: 14px; padding: 10px 6px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
@@ -356,7 +359,7 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 .gd-help summary::-webkit-details-marker { display: none; }
 .gd-help p { margin: 6px 0 0; font-size: 0.95rem; }
 .team-next { font-size: 1rem; }
-.video-btn { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.video-btn { display: inline-flex; align-items: center; gap: 8px; text-align: left; line-height: 1.25; margin-top: 4px; }
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 0 10px; }
 .compare { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.95rem; }
 .compare th, .compare td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }

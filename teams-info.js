@@ -1,5 +1,5 @@
 // Team facts for the Teams page. Edit freely: the page reads everything from here.
-// short: name used in the team picker and table. lastPlace / lastPlayoffs: the 2025 season. cheer: the "Why cheer for them?" line.
+// short: name used in the team picker and table. lastPlace / lastPlayoffs: the 2025 season. cheer: the "Why cheer for them?" line. video: [button text, link].
 // Stats are the 2026 regular season final table (30 games each).
 window.TEAM_INFO = {
   bigPicture: [
@@ -31,7 +31,7 @@ window.TEAM_INFO = {
         ['Rose Lavelle', 'Back from injury and ready for the playoffs.'],
       ],
       cheer: 'Last year they were the underdogs. This year they’re the team everyone’s chasing.',
-      video: ['Highlights: Gotham’s 2-0 win at Chicago (Apr 29)', 'https://www.gothamfc.com/news/extended-match-highlights-gotham-fc-wins-in-the-windy-city-20'],
+      video: ['Watch Gotham’s 2-0 win at Chicago', 'https://www.gothamfc.com/news/extended-match-highlights-gotham-fc-wins-in-the-windy-city-20'],
     },
     SD: {
       home: 'San Diego, California',
@@ -47,7 +47,7 @@ window.TEAM_INFO = {
         ['Dudinha', 'A 21-year-old left winger who kicks with her left foot. Her birthday is the Fourth of July!'],
         ['Mimi Van Zanten', 'Scored the winner that clinched 2nd place.'],
       ],
-      video: ['San Diego Wave 2026 highlights (Fox Sports)', 'https://www.foxsports.com/soccer/san-diego-wave-fc-team-highlights'],
+      video: ['Watch San Diego Wave highlights', 'https://www.foxsports.com/soccer/san-diego-wave-fc-team-highlights'],
     },
     WAS: {
       home: 'Washington, D.C.',
@@ -61,7 +61,7 @@ window.TEAM_INFO = {
       watch: [
         ['Trinity Rodman', 'Scored her 12th goal of the season on the last day of the season.'],
       ],
-      video: ['Washington Spirit’s best plays from September (YouTube)', 'https://www.youtube.com/watch?v=sT5QkW9KrWE'],
+      video: ['Watch the Spirit’s best plays from September', 'https://www.youtube.com/watch?v=sT5QkW9KrWE'],
     },
     KC: {
       home: 'Kansas City',
@@ -71,12 +71,12 @@ window.TEAM_INFO = {
       star: 'Never lost at home all season: 11 wins, 4 ties',
       facts: [
         'They finished the season with 5 wins in a row.',
-        'They tied Angel City for the most goals in the league (54).',
+        'They tied Angel City for the most goals of any playoff team (54).',
       ],
       watch: [
-        ['Temwa Chawinga', 'Won NWSL MVP (best player) two years in a row. She scored the first hat trick (3 goals in one game) of 2026.'],
+        ['Temwa Chawinga', 'Won NWSL MVP (best player) two years in a row. She scored the first hat trick (3 goals in one game) of this season.'],
       ],
-      video: ['KC Current highlights (YouTube)', 'https://youtu.be/OL23ZgfHiaA'],
+      video: ['Watch KC Current highlights', 'https://youtu.be/OL23ZgfHiaA'],
     },
     LA: {
       home: 'Los Angeles',
@@ -86,7 +86,7 @@ window.TEAM_INFO = {
       star: 'Taylor Suarez scored 21 seconds after coming in, an NWSL record for a sub',
       facts: [
         'They came into the playoffs without losing in their last 10 games.',
-        'Best goal difference in the league: +22.',
+        'Best goal difference of any playoff team: +22.',
       ],
       watch: [
         ['Taylor Suarez', 'A rookie who scored just 21 seconds after coming off the bench. That’s the fastest ever for a sub in the NWSL!'],
@@ -94,7 +94,7 @@ window.TEAM_INFO = {
         ['Ary Borges', 'Attacker to watch.'],
         ['Angelina Anderson', 'Goalkeeper who saved a penalty kick against Gotham.'],
       ],
-      video: ['Angel City highlights (YouTube)', 'https://youtu.be/k6JbxviohCs'],
+      video: ['Watch Angel City highlights', 'https://youtu.be/k6JbxviohCs'],
     },
     POR: {
       home: 'Portland, Oregon',
@@ -107,7 +107,7 @@ window.TEAM_INFO = {
         ['Sophia Wilson', 'Scored 15 goals in 28 games, including 2 on the last day of the season.'],
         ['Olivia Moultrie', 'In May she was tied for the league lead in assists (passes that set up a goal).'],
       ],
-      video: ['Portland Thorns highlights (YouTube)', 'https://youtu.be/ev5LAToNdrA'],
+      video: ['Watch Portland Thorns highlights', 'https://youtu.be/ev5LAToNdrA'],
     },
     UTA: {
       home: 'Utah',
@@ -124,7 +124,7 @@ window.TEAM_INFO = {
         ['Kaleigh Riehl', 'Defender who helped get five shutouts in a row.'],
         ['Kate Del Fava', 'Defender who helped get five shutouts in a row.'],
       ],
-      video: ['Utah Royals highlights (YouTube)', 'https://youtu.be/DW-vn5xhOS4'],
+      video: ['Watch Utah Royals highlights', 'https://youtu.be/DW-vn5xhOS4'],
     },
     SEA: {
       home: 'Seattle, Washington',
@@ -140,7 +140,7 @@ window.TEAM_INFO = {
         ['Jess Fishlock', 'Team captain, retiring after this season. The clinching game was her last regular-season home game.'],
       ],
       cheer: 'Every playoff game could be Jess Fishlock’s last. Seattle is playing for her.',
-      video: ['Goal: Jess Fishlock’s 50th career goal (YouTube)', 'https://youtu.be/18SeE9MDjo4'],
+      video: ['Watch Jess Fishlock’s 50th career goal', 'https://youtu.be/18SeE9MDjo4'],
     },
   },
 };

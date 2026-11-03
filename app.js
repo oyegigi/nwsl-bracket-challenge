@@ -902,8 +902,7 @@
           <ul class="facts">${t.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
         ${t.cheer ? `<h4><span aria-hidden="true">📣</span> Why cheer for them?</h4><p>${esc(t.cheer)}</p>` : ''}
         <p class="team-next"><strong>${w ? (w === code ? '✓ Won' : '✗ Lost') : 'First game'}:</strong> ${firstGame(code)}</p>
-        ${t.video ? `<p class="hint">${esc(t.video[0])}</p>
-          <a class="btn secondary small video-btn" href="${esc(t.video[1])}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Watch highlights</a>` : ''}
+        ${t.video ? `<a class="btn secondary small video-btn" href="${esc(t.video[1])}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> ${esc(t.video[0])}</a>` : ''}
       </div>
     </article>`;
   }
