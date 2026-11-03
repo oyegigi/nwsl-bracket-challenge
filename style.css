@@ -325,7 +325,21 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .facts, .watch { margin: 0 0 12px; padding-left: 1.2em; display: grid; gap: 6px; }
 .facts.plain { list-style: none; padding-left: 0; }
-.watch li > strong { display: block; font-weight: 600; font-size: 1.02rem; }
+/* Player names */
+.watch li > strong {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* Player descriptions: lighter so names stand out */
+.watch li > span {
+  color: var(--muted);
+}
+/* Drop bullets on the player list */
+.watch {
+  list-style: none;
+  padding-left: 0;
+}
 .team-picker { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 10px; }
 .pick-chip {
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px;
@@ -339,9 +353,19 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 .team-band p { margin: 0; font-size: 1rem; }
 .badge.lg { width: 54px; height: 54px; font-size: 1.7rem; flex: none; background: #fff; box-shadow: inset 0 0 0 3px var(--team-ring); }
 .team-body { padding: 16px 20px 20px; }
+/* Section titles: "Players to watch", "Did you know?", "Why cheer for them?" */
 .team-body h4 {
-  font-size: 1.25rem; font-weight: 700; color: var(--primary-dark);
-  margin: 20px 0 10px; padding-top: 16px; border-top: 2px solid var(--line);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 24px 0 10px;
+  padding-top: 16px;
+  border-top: 2px solid var(--line);
+}
+/* No divider above the first section */
+.team-body h4:first-of-type {
+  border-top: 0;
+  padding-top: 0;
 }
 .star-stat { display: flex; gap: 8px; background: var(--warn-soft); border-radius: 14px; padding: 10px 12px; }
 .record, .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
