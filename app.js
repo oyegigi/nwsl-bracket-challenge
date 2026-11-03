@@ -880,7 +880,7 @@
         </div>
         <div class="stat-grid">
           <div><span class="stat-num">${t.points}</span><span class="stat-lbl">Points</span></div>
-          <div><span class="stat-num">${esc(t.last)}</span><span class="stat-lbl">${esc(t.lastLabel || 'Last year')}</span></div>
+          <div><span class="stat-num">${team.seed}</span><span class="stat-lbl">Playoff seed</span></div>
           <div><span class="stat-num">${t.scored}</span><span class="stat-lbl">Goals scored</span></div>
           <div><span class="stat-num">${t.allowed}</span><span class="stat-lbl">Goals let in</span></div>
           <div class="wide">
@@ -888,6 +888,14 @@
             <details class="gd-help"><summary>Goal difference <span aria-hidden="true">ⓘ</span><span class="sr-only">: what’s that?</span></summary><p>${GD_HELP}</p></details>
           </div>
         </div>
+        ${t.lastPlace ? `<p class="stat-group-label">Last year (2025)</p>
+        <div class="stat-grid stat-grid-2">
+          <div><span class="stat-num">${esc(t.lastPlace)}</span><span class="stat-lbl">Place (out of 14 teams)</span></div>
+          <div>
+            <span class="stat-num small">${t.lastPlayoffs && t.lastPlayoffs.icon ? `<span aria-hidden="true">${esc(t.lastPlayoffs.icon)}</span> ` : ''}${esc(t.lastPlayoffs ? t.lastPlayoffs.text : '')}</span>
+            <span class="stat-lbl">Playoffs</span>
+          </div>
+        </div>` : ''}
         ${t.watch && t.watch.length ? `<h4><span aria-hidden="true">👀</span> Players to watch</h4>
           <ul class="watch">${t.watch.map(([n, why]) => `<li><strong>${esc(n)}</strong><span>${esc(why)}</span></li>`).join('')}</ul>` : ''}
         ${t.facts && t.facts.length ? `<h4><span aria-hidden="true">💡</span> Did you know?</h4>

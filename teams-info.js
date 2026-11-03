@@ -1,5 +1,5 @@
 // Team facts for the Teams page. Edit freely: the page reads everything from here.
-// short: name used in the team picker and table. cheer: the "Why cheer for them?" line.
+// short: name used in the team picker and table. lastPlace / lastPlayoffs: the 2025 season. cheer: the "Why cheer for them?" line.
 // Stats are the 2026 regular season final table (30 games each).
 window.TEAM_INFO = {
   bigPicture: [
@@ -16,7 +16,7 @@ window.TEAM_INFO = {
     GFC: {
       home: 'New Jersey & New York',
       short: 'Gotham',
-      last: '8th 🏆', lastLabel: 'Last year: won the title!',
+      lastPlace: '8th', lastPlayoffs: { icon: '🏆', text: 'Champions' },
       won: 18, tied: 7, lost: 5, points: 61, scored: 39, allowed: 23,
       star: 'Club-record 61 points and their first-ever Shield',
       facts: [
@@ -36,7 +36,7 @@ window.TEAM_INFO = {
     SD: {
       home: 'San Diego, California',
       short: 'Wave',
-      last: '6th',
+      lastPlace: '6th', lastPlayoffs: { icon: '', text: 'Quarterfinals' },
       won: 18, tied: 4, lost: 8, points: 58, scored: 45, allowed: 31,
       star: 'Club records for wins (18) and points (58)',
       facts: [
@@ -52,7 +52,7 @@ window.TEAM_INFO = {
     WAS: {
       home: 'Washington, D.C.',
       short: 'Spirit',
-      last: '2nd',
+      lastPlace: '2nd', lastPlayoffs: { icon: '🥈', text: 'Runner-up' },
       won: 17, tied: 4, lost: 9, points: 55, scored: 43, allowed: 28,
       star: 'Trinity Rodman scored her 12th goal of the season on the last day',
       facts: [
@@ -66,7 +66,7 @@ window.TEAM_INFO = {
     KC: {
       home: 'Kansas City',
       short: 'Current',
-      last: '1st',
+      lastPlace: '1st', lastPlayoffs: { icon: '', text: 'Quarterfinals' },
       won: 16, tied: 5, lost: 9, points: 53, scored: 54, allowed: 39,
       star: 'Never lost at home all season: 11 wins, 4 ties',
       facts: [
@@ -81,7 +81,7 @@ window.TEAM_INFO = {
     LA: {
       home: 'Los Angeles',
       short: 'Angel City',
-      last: '11th',
+      lastPlace: '11th', lastPlayoffs: { icon: '', text: 'Didn’t make it' },
       won: 15, tied: 7, lost: 8, points: 52, scored: 54, allowed: 32,
       star: 'Taylor Suarez scored 21 seconds after coming in, an NWSL record for a sub',
       facts: [
@@ -99,7 +99,7 @@ window.TEAM_INFO = {
     POR: {
       home: 'Portland, Oregon',
       short: 'Thorns',
-      last: '3rd',
+      lastPlace: '3rd', lastPlayoffs: { icon: '', text: 'Semifinals' },
       won: 14, tied: 8, lost: 8, points: 50, scored: 50, allowed: 41,
       star: 'Sophia Wilson scored 15 goals, 3rd most in the league',
       facts: [],
@@ -112,7 +112,7 @@ window.TEAM_INFO = {
     UTA: {
       home: 'Utah',
       short: 'Royals',
-      last: '12th',
+      lastPlace: '12th', lastPlayoffs: { icon: '', text: 'Didn’t make it' },
       won: 14, tied: 5, lost: 11, points: 47, scored: 44, allowed: 39,
       star: 'Five shutouts in a row, from April 3 to May 10',
       facts: [
@@ -129,7 +129,7 @@ window.TEAM_INFO = {
     SEA: {
       home: 'Seattle, Washington',
       short: 'Reign',
-      last: '5th',
+      lastPlace: '5th', lastPlayoffs: { icon: '', text: 'Quarterfinals' },
       won: 14, tied: 5, lost: 11, points: 47, scored: 37, allowed: 33,
       star: 'A season-high crowd of 16,095 watched them clinch the last playoff spot',
       facts: [

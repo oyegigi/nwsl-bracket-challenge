@@ -346,6 +346,9 @@ code { background: var(--primary-soft); padding: 1px 6px; border-radius: 6px; fo
 .stat-grid > .wide { grid-column: span 2; }
 .stat-num { font-size: 1.6rem; font-weight: 700; color: var(--primary-dark); line-height: 1.15; }
 .stat-lbl { font-size: 0.95rem; color: var(--muted); }
+.stat-num.small { font-size: 1.2rem; }
+.stat-group-label { font-size: 0.85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 14px 0 6px; }
+.stat-grid.stat-grid-2 { grid-template-columns: repeat(2, 1fr); }
 .rec.won { background: var(--good-soft); } .rec.won .stat-num, .rec.won .stat-lbl { color: var(--good); }
 .rec.tied { background: #ECEAF2; } .rec.tied .stat-num { color: var(--ink); }
 .rec.lost { background: var(--bad-soft); } .rec.lost .stat-num, .rec.lost .stat-lbl { color: var(--bad); }
